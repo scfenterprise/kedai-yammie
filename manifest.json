@@ -1,0 +1,21 @@
+{
+  "short_name": "KedaiYammie",
+  "name": "Kedai Yammie",
+  "description": "Aplikasi Kasir dan Catatan Keuangan Kedai Yammie",
+  "icons": [
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "background_color": "#2A9D8F",
+  "theme_color": "#2A9D8F",
+  "display": "standalone"
+}
