@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kedai Yammie</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Dexie.js CDN untuk Database Lokal -->
+    <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
+</head>
+<body>
+
+    <!-- Splash Screen -->
+    <!-- Splash Screen -->
+<!-- Splash Screen -->
+<div id="splash-screen">
+    <div class="splash-content">
+        <img src="logo.png" alt="Kedai Yammie Logo" class="splash-logo">
+        <h1 class="splash-title">Kedai Yammie</h1>
+        
+        <!-- Loading Bar -->
+        <div class="loading-bar">
+            <div class="progress"></div>
+        </div>
+        
+        <!-- Status Text Label -->
+        <p id="status-db">Menghubungkan ke Database...</p>
+    </div>
+</div>
+
+
+
+    <!-- Main Container Dashboard -->
+    <div id="app" style="display: none;">
+        <!-- Header Top Bar -->
+        <header class="header" style="display: flex; justify-content: space-between; align-items: center;">
+            <div class="user-info">
+                <h2>Kedai Yammie</h2>
+                <small id="status-db">Connecting...</small>
+            </div>
+            <!-- Tombol Akses Cepat Backup Data -->
+            <button onclick="bukaModalBackup()" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                💾 Backup
+            </button>
+        </header>
+
+        <main class="content">
+            <!-- Card Ringkasan Finansial -->
+            <div class="summary-card">
+                <div class="card-header">
+                    <span>Ringkasan Keuangan</span>
+                    <small>Bulan Ini</small>
+                </div>
+                <div class="profit-box">
+                    <small>Estimasi Laba / Profit</small>
+                    <h1 id="dash-laba">Rp 0</h1>
+                </div>
+                <div class="card-detail">
+                    <div class="detail-item income">
+                        <small>Pemasukan</small>
+                        <strong id="dash-pemasukan">Rp 0</strong>
+                    </div>
+                    <div class="divider"></div>
+                    <div class="detail-item expense">
+                        <small>Pengeluaran</small>
+                        <strong id="dash-pengeluaran">Rp 0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grid Menu Utama -->
+            <div class="section-title">Menu Utama</div>
+            <div class="menu-grid">
+                <div class="menu-item" onclick="navigasi('transaksi')">
+                    <div class="menu-icon bg-red">🛒</div>
+                    <span>Transaksi</span>
+                </div>
+                <div class="menu-item" onclick="navigasi('produk')">
+                    <div class="menu-icon bg-orange">🍜</div>
+                    <span>Kelola Produk</span>
+                </div>
+                <div class="menu-item" onclick="bukaHalamanPengeluaran()">
+                    <div class="menu-icon bg-yellow">💸</div>
+                    <span>Pengeluaran</span>
+                </div>
+                <!-- Cari bagian menu Rekapitulasi di index.html dan ubah menjadi: -->
+<div class="menu-item" onclick="navigasi('rekapitulasi')">
+    <div class="menu-icon bg-green">📊</div>
+    <span>Rekapitulasi</span>
+</div>
+
+                <div class="menu-item" onclick="bukaModalBackup()">
+                    <div class="menu-icon" style="background: #457B9D; color: white;">💾</div>
+                    <span>Backup & Restore</span>
+                </div>
+            </div>
+
+            <!-- List Transaksi Terakhir (Maksimal 10) -->
+            <div class="section-title">Aktivitas Terakhir</div>
+            <div class="recent-list" id="list-aktivitas">
+                <p class="empty-state">Belum ada transaksi tercatat.</p>
+            </div>
+        </main>
+
+        <!-- Page: Kelola Produk -->
+        <div id="page-produk" class="page-container" style="display: none;">
+            <div class="page-header">
+                <button class="btn-back" onclick="tutupHalaman('page-produk')">←</button>
+                <h3>Kelola Produk</h3>
+                <button class="btn-add" onclick="bukaModalProduk()">+ Tambah</button>
+            </div>
+
+            <div class="page-body">
+                <!-- Search & Filter Box -->
+                <div class="search-box" style="display: flex; gap: 8px;">
+                    <input type="text" id="search-produk" placeholder="Cari nama produk..." oninput="handleSearchInput()" style="flex: 2;">
+                    <select id="filter-kategori" onchange="muatDaftarProduk()" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #DDD;">
+                        <option value="">Semua Kategori</option>
+                    </select>
+                </div>
+
+                <!-- List Produk -->
+                <div id="list-produk" class="product-list"></div>
+            </div>
+        </div>
+
+        <!-- Modal Form Tambah/Edit Produk -->
+        <div id="modal-produk" class="modal" style="display: none;">
+            <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h4 id="modal-title-produk">Tambah Produk</h4>
+                    <span class="close-modal" onclick="tutupModalProduk()">&times;</span>
+                </div>
+                <form id="form-produk" onsubmit="simpanProduk(event)">
+                    <input type="hidden" id="prod-id">
+                    <input type="hidden" id="prod-gamin-base64">
+
+                    <!-- Input Gambar Mini (Thumbnail) -->
+                    <div class="form-group" style="text-align: center;">
+                        <label>Gambar Thumbnail (Gamin)</label>
+                        <div class="image-preview-box" onclick="document.getElementById('prod-gamin-file').click()">
+                            <img id="img-preview" src="" alt="Preview Gambar" style="display:none; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                            <span id="img-placeholder" style="color: #888; font-size: 12px;">📷 Klik untuk Pilih Gambar</span>
+                        </div>
+                        <input type="file" id="prod-gamin-file" accept="image/*" onchange="previewGambar(event)" style="display: none;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nama Produk</label>
+                        <input type="text" id="prod-nama" placeholder="Contoh: Yammie Spesial" required>
+                    </div>
+
+                    <!-- Kategori Dinamis -->
+                    <div class="form-group">
+                        <label>Kategori Produk</label>
+                        <select id="prod-kategori-select" onchange="toggleInputKategori(this.value)" required>
+                            <option value="">-- Pilih Kategori --</option>
+                            <option value="__NEW__">+ Tambah Kategori Baru...</option>
+                        </select>
+                        <input type="text" id="prod-kategori-new" placeholder="Masukkan nama kategori baru" style="display: none; margin-top: 6px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Harga (Rp)</label>
+                        <input type="number" id="prod-harga" placeholder="15000" required min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Stok Awal</label>
+                        <input type="number" id="prod-stok" placeholder="50" required min="0">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Deskripsi Produk</label>
+                        <textarea id="prod-deskripsi" rows="3" placeholder="Penjelasan singkat rasa, porsi, atau varian..." style="width:100%; padding: 10px; border:1px solid #CED4DA; border-radius:8px; font-size:14px;"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Status Produk</label>
+                        <select id="prod-status">
+                            <option value="1">Aktif (Tersedia)</option>
+                            <option value="0">Nonaktif (Habis/Sembunyikan)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="tutupModalProduk()">Batal</button>
+                        <button type="submit" class="btn-primary">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Konfirmasi Hapus Produk -->
+        <div id="modal-konfirmasi" class="modal" style="display: none;">
+            <div class="modal-content" style="text-align: center; max-width: 320px;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🗑️</div>
+                <h4 style="margin-bottom: 8px;">Hapus Produk?</h4>
+                <p style="font-size: 13px; color: #6c757d; margin-bottom: 20px;">
+                    Apakah Anda yakin ingin menghapus produk ini secara permanen?
+                </p>
+                <input type="hidden" id="hapus-prod-id">
+                
+                <div class="form-actions" style="justify-content: center; gap: 12px;">
+                    <button type="button" class="btn-secondary" onclick="tutupModalKonfirmasi()" style="flex: 1;">Batal</button>
+                    <button type="button" class="btn-primary" onclick="eksekusiHapusProduk()" style="background: #E63946; flex: 1;">Hapus</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Transaksi Pembelian -->
+        <div id="page-transaksi" class="page-container" style="display: none;">
+            <div class="page-header">
+                <button class="btn-back" onclick="tutupHalaman('page-transaksi')">←</button>
+                <h3>Transaksi Pembelian</h3>
+                <span id="cart-badge" style="background: white; color: var(--primary-color); font-weight: bold; padding: 2px 8px; border-radius: 12px; font-size: 12px;">0 Item</span>
+            </div>
+
+            <div class="page-body" style="padding-bottom: 90px;">
+                <!-- Filter & Search Produk Transaksi -->
+                <div class="search-box" style="display: flex; gap: 8px;">
+                    <input type="text" id="search-trx-produk" placeholder="Cari produk..." oninput="handleSearchTrx()">
+                    <select id="filter-trx-kategori" onchange="muatProdukTransaksi()" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #DDD;">
+                        <option value="">Semua</option>
+                    </select>
+                </div>
+
+                <!-- Grid Pilih Produk -->
+                <div id="grid-trx-produk" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
+                    <!-- Di-render via JS -->
+                </div>
+
+                <!-- Section Keranjang Belanja -->
+                <div class="section-title" style="margin-top: 15px;">Keranjang Belanja</div>
+                <div id="cart-list" style="background: white; border-radius: 12px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04); margin-bottom: 15px;">
+                    <p class="empty-state">Keranjang masih kosong.</p>
+                </div>
+
+                <!-- Input Diskon & Data Pembeli -->
+                <div style="background: white; border-radius: 12px; padding: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
+                    <div class="form-group">
+                        <label>Potongan / Diskon Global (Rp)</label>
+                        <input type="number" id="trx-potongan" value="0" min="0" onchange="hitungTotalTransaksi()" onkeyup="hitungTotalTransaksi()">
+                    </div>
+
+                    <hr style="border: none; border-top: 1px dashed #DDD; margin: 12px 0;">
+                    
+                    <div class="form-group">
+                        <label>Nama Pelanggan (Opsional)</label>
+                        <input type="text" id="trx-nama-pelanggan" placeholder="Nama pembeli">
+                    </div>
+                    <div class="form-group">
+                        <label>Telepon (Opsional)</label>
+                        <input type="tel" id="trx-telepon" placeholder="08xxxxxxxxxx">
+                    </div>
+                    <div class="form-group">
+                        <label>Alamat (Opsional)</label>
+                        <textarea id="trx-alamat" rows="2" placeholder="Alamat pengiriman..." style="width:100%; padding:10px; border:1px solid #CED4DA; border-radius:8px; font-size:14px;"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fixed Bottom Bar Checkout -->
+            <div style="position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px 15px; border-top: 1px solid #DDD; display: flex; justify-content: space-between; align-items: center; z-index: 1001;">
+                <div>
+                    <small style="font-size: 11px; color: #6C757D;">Total Bayar:</small>
+                    <h3 id="txt-total-bayar" style="color: var(--primary-color); font-size: 18px;">Rp 0</h3>
+                </div>
+                <button class="btn-primary" onclick="simpanTransaksi()" style="padding: 12px 24px; font-size: 15px;">Selesaikan</button>
+            </div>
+        </div>
+
+        <!-- Modal Detail Transaksi -->
+        <div id="modal-detail-trx" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:9999;">
+            <div style="background:#fff; border-radius:12px; width:90%; max-width:400px; padding:20px; position:relative;">
+                <h4 style="margin-top:0; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">Detail Transaksi</h4>
+                <div id="detail-trx-content"></div>
+                <button onclick="tutupModalDetail()" style="width:100%; margin-top:15px; padding:10px; background:#6c757d; color:#fff; border:none; border-radius:8px; cursor:pointer;">Tutup</button>
+            </div>
+        </div>
+
+        <!-- Modal Konfirmasi Simpan Transaksi -->
+        <div id="modal-konfirmasi-trx" class="modal" style="display: none;">
+            <div class="modal-content" style="text-align: center; max-width: 320px;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🛍️</div>
+                <h4 style="margin-bottom: 8px;">Selesaikan Transaksi?</h4>
+                <p style="font-size: 13px; color: #6c757d; margin-bottom: 15px;">
+                    Pastikan total pembayaran dan data pesanan sudah sesuai sebelum disimpan.
+                </p>
+                <div style="background: #f8f9fa; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+                    <small style="color: #6c757d; display: block;">Total Tagihan:</small>
+                    <strong id="konfirmasi-trx-total" style="font-size: 18px; color: var(--primary-color);">Rp 0</strong>
+                </div>
+                
+                <div class="form-actions" style="justify-content: center; gap: 12px;">
+                    <button type="button" class="btn-secondary" onclick="tutupModalKonfirmasiTrx()" style="flex: 1;">Batal</button>
+                    <button type="button" class="btn-primary" onclick="eksekusiSimpanTransaksi()" style="flex: 1;">Ya, Simpan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Pengeluaran Kas -->
+        <div id="page-pengeluaran" class="page-container" style="display: none;">
+            <div class="page-header">
+                <button class="btn-back" onclick="tutupHalaman('page-pengeluaran')">←</button>
+                <h3>Pengeluaran Kas</h3>
+                <button class="btn-add" onclick="bukaModalPengeluaran()">+ Catat</button>
+            </div>
+
+            <div class="page-body">
+                <!-- Ringkasan Total Pengeluaran -->
+                <div style="background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 12px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; font-weight: 500;">Total Pengeluaran Bulan Ini:</span>
+                    <strong id="pengeluaran-total-bulan" style="font-size: 15px; color: #dc3545;">Rp 0</strong>
+                </div>
+
+                <!-- Search & Filter Pengeluaran -->
+                <div class="search-box" style="display: flex; gap: 8px; margin-bottom: 15px;">
+                    <input type="text" id="search-pengeluaran" placeholder="Cari pengeluaran..." oninput="muatDaftarPengeluaran()" style="flex: 2;">
+                    <select id="filter-kategori-pengeluaran" onchange="muatDaftarPengeluaran()" style="flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #DDD; font-size: 13px;">
+                        <option value="">Semua Kategori</option>
+                        <option value="Bahan Baku">Bahan Baku</option>
+                        <option value="Operasional">Operasional</option>
+                        <option value="Gaji">Gaji / Upah</option>
+                        <option value="Peralatan">Peralatan / Aset</option>
+                        <option value="Lainnya">Lainnya</option>
+                    </select>
+                </div>
+
+                <!-- Daftar Riwayat Pengeluaran -->
+                <div class="section-title">Riwayat Pengeluaran</div>
+                <div id="list-pengeluaran">
+                    <p class="empty-state">Belum ada pengeluaran tercatat.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Form (Tambah / Edit Pengeluaran) -->
+        <div id="modal-pengeluaran" class="modal" style="display: none;">
+            <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+                <div class="modal-header">
+                    <h4 id="modal-title-pengeluaran">Catat Pengeluaran</h4>
+                    <span class="close-modal" onclick="tutupModalPengeluaran()">&times;</span>
+                </div>
+                <form id="form-pengeluaran" onsubmit="handleFormPengeluaranSubmit(event)">
+                    <input type="hidden" id="pengeluaran-id">
+
+                    <div class="form-group">
+                        <label>Nominal Pengeluaran (Rp)</label>
+                        <input type="number" id="pengeluaran-nominal" placeholder="Contoh: 150000" required min="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Kategori Pengeluaran</label>
+                        <select id="pengeluaran-kategori" required style="width:100%; padding: 10px; border:1px solid #CED4DA; border-radius:8px; font-size:14px;">
+                            <option value="">-- Pilih Kategori --</option>
+                            <option value="Bahan Baku">Bahan Baku (Mie, Ayam, Bumbu, dll)</option>
+                            <option value="Operasional">Operasional (Gas, Listrik, Es, dll)</option>
+                            <option value="Gaji">Gaji / Upah Pegawai</option>
+                            <option value="Peralatan">Peralatan / Perawatan</option>
+                            <option value="Lainnya">Lain-lain</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tanggal & Waktu</label>
+                        <input type="datetime-local" id="pengeluaran-tanggal" required style="width:100%; padding: 10px; border:1px solid #CED4DA; border-radius:8px; font-size:14px;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Keterangan / Rincian</label>
+                        <textarea id="pengeluaran-keterangan" rows="3" placeholder="Contoh: Beli dada ayam 3kg & minyak goreng" required style="width:100%; padding: 10px; border:1px solid #CED4DA; border-radius:8px; font-size:14px;"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="tutupModalPengeluaran()">Batal</button>
+                        <button type="submit" class="btn-primary" style="background: #E63946;">Lanjut</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modal Konfirmasi Simpan / Update Pengeluaran -->
+        <div id="modal-konfirmasi-pengeluaran" class="modal" style="display: none;">
+            <div class="modal-content" style="text-align: center; max-width: 320px;">
+                <div style="font-size: 40px; margin-bottom: 10px;">💸</div>
+                <h4 id="konfirmasi-pengeluaran-title" style="margin-bottom: 8px;">Simpan Pengeluaran?</h4>
+                <p style="font-size: 13px; color: #6c757d; margin-bottom: 15px;">
+                    Pastikan nominal dan rincian pengeluaran kas sudah benar.
+                </p>
+                <div style="background: #fff5f5; border: 1px solid #ffe3e3; padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+                    <small style="color: #6c757d; display: block;">Total Nominal:</small>
+                    <strong id="konfirmasi-pengeluaran-total" style="font-size: 18px; color: #dc3545;">Rp 0</strong>
+                </div>
+                
+                <div class="form-actions" style="justify-content: center; gap: 12px;">
+                    <button type="button" class="btn-secondary" onclick="tutupModalKonfirmasiPengeluaran()" style="flex: 1;">Batal</button>
+                    <button type="button" class="btn-primary" onclick="eksekusiSimpanPengeluaran()" style="background: #dc3545; flex: 1;">Ya, Simpan</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Detail Pengeluaran -->
+        <div id="modal-detail-pengeluaran" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 360px;">
+                <div class="modal-header">
+                    <h4>Detail Pengeluaran</h4>
+                    <span class="close-modal" onclick="tutupModalDetailPengeluaran()">&times;</span>
+                </div>
+                <div id="detail-pengeluaran-body" style="padding: 10px 0; font-size: 14px;">
+                    <!-- Di-render via JS -->
+                </div>
+                <div class="form-actions" style="margin-top: 15px; display: flex; gap: 8px;">
+                    <button type="button" id="btn-detail-hapus" class="btn-secondary" style="color: #dc3545; border-color: #dc3545; flex: 1;">🗑️ Hapus</button>
+                    <button type="button" id="btn-detail-edit" class="btn-primary" style="flex: 1;">✏️ Edit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Konfirmasi Hapus Pengeluaran -->
+        <div id="modal-konfirmasi-hapus-pengeluaran" class="modal" style="display: none;">
+            <div class="modal-content" style="text-align: center; max-width: 320px;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🗑️</div>
+                <h4 style="margin-bottom: 8px;">Hapus Pengeluaran?</h4>
+                <p style="font-size: 13px; color: #6c757d; margin-bottom: 20px;">
+                    Catatan pengeluaran ini akan dihapus secara permanen.
+                </p>
+                <input type="hidden" id="hapus-pengeluaran-id">
+                
+                <div class="form-actions" style="justify-content: center; gap: 12px;">
+                    <button type="button" class="btn-secondary" onclick="tutupModalHapusPengeluaran()" style="flex: 1;">Batal</button>
+                    <button type="button" class="btn-primary" onclick="eksekusiHapusPengeluaran()" style="background: #E63946; flex: 1;">Hapus</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Page: Rekapitulasi Keuangan -->
+        <div id="page-rekapitulasi" class="page-container" style="display: none;">
+            <div class="page-header">
+                <button class="btn-back" onclick="tutupHalaman('page-rekapitulasi')">←</button>
+                <h3>Rekapitulasi Keuangan</h3>
+                <div style="width: 24px;"></div>
+            </div>
+
+            <div class="page-body">
+                <!-- Filter Pill Tanggal -->
+                <div class="filter-pill-container" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 10px; margin-bottom: 12px;">
+                    <button class="btn-filter-pill active" onclick="setFilterRekap('hari_ini', this)">Hari Ini</button>
+                    <button class="btn-filter-pill" onclick="setFilterRekap('kemarin', this)">Kemarin</button>
+                    <button class="btn-filter-pill" onclick="setFilterRekap('bulan_ini', this)">Bulan Ini</button>
+                    <button class="btn-filter-pill" onclick="setFilterRekap('tahun_ini', this)">Tahun Ini</button>
+                    <button class="btn-filter-pill" onclick="setFilterRekap('custom', this)">Custom</button>
+                </div>
+
+                <!-- Input Custom Tanggal -->
+                <div id="box-custom-tanggal" style="display: none; background: #fff; padding: 10px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 15px;">
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="date" id="rekap-tgl-mulai" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px;">
+                        <span>s/d</span>
+                        <input type="date" id="rekap-tgl-selesai" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #ccc; font-size: 12px;">
+                        <button onclick="muatRekapitulasi()" style="background: #E63946; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; font-size: 12px;">Terapkan</button>
+                    </div>
+                </div>
+
+                <!-- Grid Summary Ringkasan -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div style="background: #e8f5e9; border: 1px solid #c8e6c9; padding: 12px; border-radius: 10px;">
+                        <small style="color: #2e7d32; display: block; font-size: 11px; font-weight: 600;">Total Pemasukan</small>
+                        <strong id="rekap-total-pemasukan" style="font-size: 16px; color: #1b5e20;">Rp 0</strong>
+                    </div>
+                    <div style="background: #ffebee; border: 1px solid #ffcdd2; padding: 12px; border-radius: 10px;">
+                        <small style="color: #c62828; display: block; font-size: 11px; font-weight: 600;">Total Pengeluaran</small>
+                        <strong id="rekap-total-pengeluaran" style="font-size: 16px; color: #b71c1c;">Rp 0</strong>
+                    </div>
+                </div>
+
+                <!-- Banner Laba / Rugi Bersih -->
+                <div style="background: #ffffff; border: 2px solid #2A9D8F; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <small style="color: #6c757d; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Laba Bersih (Profit)</small>
+                    <div id="rekap-laba-bersih" style="font-size: 22px; font-weight: 800; color: #2A9D8F; margin-top: 4px;">Rp 0</div>
+                    <span id="rekap-jumlah-transaksi" style="font-size: 11px; color: #888; margin-top: 4px; display: block;">0 Transaksi Penjualan</span>
+                </div>
+
+                <!-- Breakdown Pengeluaran per Kategori -->
+                <div class="section-title">Rincian Pengeluaran Kategori</div>
+                <div id="rekap-breakdown-kategori" style="background: #fff; border-radius: 10px; padding: 12px; margin-bottom: 15px; border: 1px solid #eee; font-size: 13px;">
+                    <p style="color: #888; text-align: center; margin: 0;">Belum ada data pengeluaran.</p>
+                </div>
+
+                <!-- Arus Kas / Timeline Riwayat -->
+                <div class="section-title">Arus Kas (Gabungan)</div>
+                <div id="rekap-list-aruskas">
+                    <p class="empty-state">Belum ada aktivitas transaksi.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Backup & Restore Data -->
+        <div id="modal-backup-restore" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 380px;">
+                <div class="modal-header">
+                    <h4>Backup & Restore Data</h4>
+                    <span class="close-modal" onclick="tutupModalBackup()">&times;</span>
+                </div>
+                <div class="modal-body" style="padding: 15px 0;">
+                    <!-- Box Backup -->
+                    <div style="background: #f8f9fa; padding: 12px; border-radius: 10px; border: 1px solid #e9ecef; margin-bottom: 15px;">
+                        <strong style="display: block; font-size: 14px; margin-bottom: 4px;">📥 Backup Data (Export)</strong>
+                        <p style="font-size: 12px; color: #6c757d; margin-bottom: 10px;">
+                            Unduh seluruh data produk, penjualan, dan pengeluaran ke file JSON sebagai cadangan.
+                        </p>
+                        <button onclick="eksporBackupJSON()" class="btn-primary" style="width: 100%; background: #2A9D8F; font-size: 13px;">
+                            Unduh Backup (.json)
+                        </button>
+                    </div>
+
+                    <!-- Box Restore -->
+                    <div style="background: #fff5f5; padding: 12px; border-radius: 10px; border: 1px solid #ffe3e3;">
+                        <strong style="display: block; font-size: 14px; margin-bottom: 4px; color: #dc3545;">📤 Restore Data (Import)</strong>
+                        <p style="font-size: 12px; color: #6c757d; margin-bottom: 10px;">
+                            Pilih file backup (.json) untuk memulihkan data. <br>
+                            <span style="color: #dc3545; font-weight: 600;">Peringatan: Data saat ini akan digantikan oleh data dari file backup!</span>
+                        </p>
+                        <input type="file" id="input-file-backup" accept="application/json, .json, text/plain, */*" style="display: none;" onchange="prosesImportJSON(event)">
+
+                        <button onclick="document.getElementById('input-file-backup').click()" class="btn-secondary" style="width: 100%; border-color: #dc3545; color: #dc3545; font-size: 13px;">
+                            Pilih File & Restore
+                        </button>
+                    </div>
+                </div>
+                <div class="form-actions" style="margin-top: 10px;">
+                    <button type="button" class="btn-secondary" onclick="tutupModalBackup()" style="width: 100%;">Tutup</button>
+                </div>
+
+        </div>
+
+      <!-- Modal Konfirmasi Download Custom -->
+
+
+
+    </div>
+
+      <div id="modal-konfirmasi-download" class="modal" style="display: none;">
+    <div class="modal-content" style="text-align: center; max-width: 340px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">💾</div>
+        <h4 style="margin-bottom: 8px;">Konfirmasi Unduh Backup</h4>
+        <p style="font-size: 13px; color: #6c757d; margin-bottom: 10px;">
+            File cadangan data aplikasi siap diunduh dengan nama:
+        </p>
+        
+        <div id="nama-file-backup-preview" style="background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 8px; font-weight: bold; font-size: 12px; word-break: break-all; margin-bottom: 12px; color: #212529;">
+            Backup_KedaiYammie_20261001.json
+        </div>
+
+        <p style="font-size: 11px; color: #888; margin-bottom: 20px;">
+            Klik "Unduh Sekarang" untuk mengunduh file cadangan ke perangkat Anda.
+        </p>
+
+        <div class="form-actions" style="justify-content: center; gap: 10px;">
+            <button type="button" class="btn-secondary" onclick="tutupModalKonfirmasiDownload()" style="flex: 1;">Batal</button>
+            <button type="button" id="btn-eksekusi-download" class="btn-primary" style="background: #2A9D8F; flex: 1;">Unduh Sekarang</button>
+        </div>
+    </div>
+</div>
+
+    <script src="js/db.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
