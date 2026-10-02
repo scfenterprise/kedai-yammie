@@ -14,7 +14,8 @@
       "sizes": "512x512"
     }
   ],
-  "start_url": ".",
+  "start_url": "/kedai-yammie/",
+  "scope": "/kedai-yammie/",
   "background_color": "#FFFFFF",
   "theme_color": "#FFFFFF",
   "display": "standalone"
